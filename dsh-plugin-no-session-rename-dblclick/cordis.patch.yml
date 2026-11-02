@@ -1,0 +1,4 @@
+# Mounts the browser half that swallows the session-title double-click rename.
+- insert:
+    - id: no-session-rename-dblclick
+      name: 'dsh-plugin-no-session-rename-dblclick'

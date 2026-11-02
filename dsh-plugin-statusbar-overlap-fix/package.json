@@ -1,0 +1,37 @@
+{
+  "name": "dsh-plugin-statusbar-overlap-fix",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local CSS override: rebuild the chat composer seat's bottom scrim with an opaque theme color so the status pills (token usage / performance stats) stay readable instead of floating over chat text under dsh-dream-skin's wallpaper wash.",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": {
+      "default": "./index.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "lib/client.js",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "license": "MIT",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [],
+      "platform": "web"
+    }
+  },
+  "engines": {
+    "dsh": ">=0.2.1-rc.2 <0.3.0"
+  }
+}

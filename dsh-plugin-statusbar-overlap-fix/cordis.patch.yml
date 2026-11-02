@@ -1,0 +1,4 @@
+# Mounts the browser half that injects the composer-seat scrim override.
+- insert:
+    - id: statusbar-overlap-fix
+      name: 'dsh-plugin-statusbar-overlap-fix'

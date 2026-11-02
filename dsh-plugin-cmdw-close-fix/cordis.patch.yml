@@ -1,0 +1,4 @@
+# Mounts the browser half that patches the page.close shortcut fallback.
+- insert:
+    - id: cmdw-close-fix
+      name: 'dsh-plugin-cmdw-close-fix'
