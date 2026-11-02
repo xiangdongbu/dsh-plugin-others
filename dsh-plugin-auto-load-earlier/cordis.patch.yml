@@ -1,0 +1,5 @@
+# Mounts the browser half that hides the 「加载更早」 row and pages older
+# history automatically when the chat is scrolled to the top.
+- insert:
+    - id: auto-load-earlier
+      name: 'dsh-plugin-auto-load-earlier'

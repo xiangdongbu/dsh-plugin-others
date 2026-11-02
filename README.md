@@ -6,6 +6,7 @@ DeepSeek Harness 插件合集仓库（collection repo）：仓库根没有 `dsh`
 
 | 目录 | 作用 |
 | --- | --- |
+| `dsh-plugin-auto-load-earlier` | 隐藏对话顶部的「加载更早」按钮，滚到顶部时自动加载上一页历史 |
 | `dsh-plugin-cmdw-close-fix` | cmdw 关闭行为修复 |
 | `dsh-plugin-dream-skin-fix` | dream 皮肤两处可读性修复：① 输入框（composer）背景提亮；② 底部状态栏（token 用量 / 性能统计）不再浮在对话文字上 |
 | `dsh-plugin-no-session-rename-dblclick` | 禁用侧栏会话标题双击重命名（保留右键菜单重命名） |
