@@ -1,4 +1,0 @@
-# Mounts the browser half that injects the composer-background override.
-- insert:
-    - id: dream-composer-fix
-      name: 'dsh-plugin-dream-composer-fix'

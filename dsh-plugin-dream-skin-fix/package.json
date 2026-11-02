@@ -1,8 +1,8 @@
 {
-  "name": "dsh-plugin-statusbar-overlap-fix",
+  "name": "dsh-plugin-dream-skin-fix",
   "version": "1.0.0",
   "private": true,
-  "description": "Local CSS override: rebuild the chat composer seat's bottom scrim with an opaque theme color so the status pills (token usage / performance stats) stay readable instead of floating over chat text under dsh-dream-skin's wallpaper wash.",
+  "description": "Local CSS override for dsh-dream-skin: (1) lifts the main chat composer background with a subtle theme-tinted layer so the input area reads as a distinct surface, and (2) rebuilds the composer seat's bottom scrim with an opaque theme color so the status pills (token usage / performance stats) stay readable instead of floating over chat text.",
   "type": "module",
   "main": "index.js",
   "exports": {

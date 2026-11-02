@@ -1,0 +1,5 @@
+# Mounts the browser half that injects both dream-skin stylesheet overrides
+# (composer background lift + opaque composer-seat scrim).
+- insert:
+    - id: dream-skin-fix
+      name: 'dsh-plugin-dream-skin-fix'
