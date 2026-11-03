@@ -1,8 +1,8 @@
 {
   "name": "dsh-plugin-keep-new-session",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
-  "description": "Local fix: keep a newly created blank session (「新会话」) listed in the sidebar after you switch to another session, instead of letting the workspace UI filter it out. Kept sessions are deleted with the stock row menu's 「删除」.",
+  "description": "Local fix: keep a newly created blank session (「新会话」) listed in the sidebar after you switch to another session, and reuse that same session as the new-chat draft until its first prompt is sent. Deletion reuses the stock row menu's 「删除」.",
   "type": "module",
   "main": "index.js",
   "exports": {

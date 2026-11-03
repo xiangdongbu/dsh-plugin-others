@@ -25,6 +25,19 @@
  * untitled session: they stay listed, stay clickable, and can be deleted with
  * the stock menu item. No delete UI of its own is needed.
  *
+ * Reuse: the host picks the new-chat draft by scanning for a `blank` summary
+ * (`createInWorkspace`), a scan the flipped view would make it fail — every
+ * click of 新建对话 would mint a fresh session and kept blanks would pile up.
+ * So `uiWorkspace.createInWorkspace` is wrapped with the same scan extended by
+ * one predicate: a kept id also qualifies while it is still message-less,
+ * judged by the Host's own projection metadata
+ * (`projectionValues.sessionListMetadata.blank / .lastPromptAt`). Until the
+ * first prompt is sent, 新建对话 therefore lands back on the same session —
+ * one message-less draft per workspace; after the first prompt the session is
+ * ordinary and the next 新建对话 starts a fresh one. The metadata rides in the
+ * summary untouched by both the view flip and the retention-write clone, so
+ * it disambiguates "still blank" from the flip itself.
+ *
  * The flip is view-only and safe by construction:
  *   - the wrapped `getSnapshot` memoizes on (raw snapshot identity, set
  *     version), so React's `useSyncExternalStore` keeps one stable snapshot
@@ -33,8 +46,11 @@
  *     writes that read the view flow back through `list.set`, which detaches
  *     a clone; the next projection rebuild restores the raw row and the view
  *     re-applies the flip — idempotent, no feedback loop;
- *   - a kept id leaves the set as soon as its session grows a real turn (it
- *     is visible on its own from then on) or disappears (deleted).
+ *   - a kept id leaves the set when its session disappears (deleted) or has
+ *     definitively grown a real turn (confirmed by the Host projection
+ *     metadata, which the retention-write clone never alters); until then a
+ *     stale id is harmless — the flip only matches `blank === true` rows and
+ *     the reuse scan re-checks message-lessness on every call.
  *
  * "Visited" tracking mirrors the host's own current-session probe
  * (`mainSessionId`): the one summary whose `retainedBy.mainView` is positive.
@@ -44,9 +60,9 @@
  * Two accepted behavior changes, both deliberate:
  *   - a kept blank shows the localized 「新会话」 label (through the locale
  *     service, falling back to the untitled label when unavailable);
- *   - a kept blank is no longer eligible as the new-chat draft
- *     (`createInWorkspace` reuses only blank summaries), so clicking
- *     新建对话 opens a fresh draft instead of jumping back to the kept one.
+ *   - while it stays message-less it is also the new-chat draft again (the
+ *     wrapped `createInWorkspace` reuses it), so clicking 新建对话 returns to
+ *     it instead of accumulating look-alike rows.
  */
 window.__ModuleLoader__.load({
   id: 'dsh-plugin-keep-new-session',
@@ -104,11 +120,17 @@ window.__ModuleLoader__.load({
       saveKept()
     }
 
-    function drop(sessionId) {
-      if (!kept.includes(sessionId)) return
-      kept = kept.filter((id) => id !== sessionId)
-      version += 1
-      saveKept()
+    /**
+     * Whether the session is still message-less, judged by the Host's own
+     * projection metadata rather than the (view-flippable) `blank` summary
+     * field: a session with a sent prompt reports `sessionListMetadata.blank
+     * === false` / a non-null `lastPromptAt`. Unread projections count as
+     * message-less — a session cannot take a prompt without having been
+     * opened, and opening materializes its projections.
+     */
+    function stillMessageLess(summary) {
+      const metadata = summary?.projectionValues?.sessionListMetadata
+      return metadata?.blank !== false && metadata?.lastPromptAt == null
     }
 
     /**
@@ -142,16 +164,19 @@ window.__ModuleLoader__.load({
      * Returns the raw snapshot untouched when there is nothing to flip.
      */
     function present(snap) {
-      // Prune kept ids whose session is gone. Deliberately NOT on
-      // `blank !== true`: the host's retention writes may transiently carry
-      // this view's own flip back into the raw state (getSnapshot → list.set
-      // clone), so a raw false here does not prove a real turn arrived; the
-      // next projection rebuild restores the raw row either way. Pruning on
-      // blankness could drop a kept session between those two writes and let
-      // it vanish from the sidebar — exactly what this plugin prevents.
+      // Prune kept ids whose session is gone, or that has definitively grown
+      // a real turn. The turn check needs BOTH signals because the host's
+      // retention writes may transiently carry this view's own flip back
+      // into the raw state (getSnapshot → list.set clone), so a raw
+      // `blank === false` alone does not prove a prompt was sent; the
+      // projection metadata, however, rides through that clone untouched,
+      // and its blank/lastPromptAt never lie. A still-blank kept session
+      // stays in the set so it keeps being visible and reusable.
       let pruned = false
       for (const id of [...kept]) {
-        if (snap.byId[id] === undefined) {
+        const row = snap.byId[id]
+        const reallyStarted = row !== undefined && row.blank === false && !stillMessageLess(row)
+        if (row === undefined || reallyStarted) {
           kept = kept.filter((keptId) => keptId !== id)
           pruned = true
         }
@@ -180,6 +205,52 @@ window.__ModuleLoader__.load({
       viewSource = snap
       viewVersion = version
       return view
+    }
+
+    /**
+     * The host's new-chat draft scan (`createInWorkspace`), extended so a
+     * kept session qualifies while it is still message-less. Mirrors the
+     * host predicate field for field — first reusable member blank, in list
+     * order, matching the workspace path, unarchived, preset-compatible —
+     * with `summary.blank` widened to `blank || (kept && stillMessageLess)`.
+     * Returns `undefined` when no member qualifies (create a fresh session)
+     * and `null` when the scan cannot run safely (unexpected shapes); the
+     * caller then falls back to the untouched host method.
+     */
+    function findReusableBlank(ui, workspace, options) {
+      const sessions = ui.sessions?.list?.getSnapshot()
+      const workspaces = ui.workspaces?.list?.getSnapshot()
+      if (
+        sessions === undefined ||
+        workspaces === undefined ||
+        !Array.isArray(sessions.ids) ||
+        sessions.byId === undefined ||
+        !Array.isArray(workspaces.archivedSessionIds) ||
+        workspace === null ||
+        typeof workspace !== 'object' ||
+        typeof workspace.workspaceId !== 'string' ||
+        typeof workspace.path !== 'string' ||
+        !Array.isArray(workspace.sessionIds)
+      ) {
+        return null
+      }
+      const preset = options?.agentPreset
+      return (
+        sessions.ids.find((id) => {
+          const summary = sessions.byId[id]
+          if (summary === undefined) return false
+          const listed = summary.projectionValues?.agentPreset
+          const reusableBlank =
+            summary.blank === true || (kept.includes(id) && stillMessageLess(summary))
+          return (
+            reusableBlank &&
+            summary.cwd === workspace.path &&
+            workspace.sessionIds.includes(id) &&
+            !workspaces.archivedSessionIds.includes(id) &&
+            (preset === undefined || typeof listed !== 'string' || listed === preset)
+          )
+        }) ?? null
+      )
     }
 
     exports.apply = function apply(ctx) {
@@ -229,10 +300,35 @@ window.__ModuleLoader__.load({
         return present(snap)
       }
 
+      // Reuse: widen the host's draft scan so a kept session — presented
+      // non-blank by the view above — is picked again while no prompt has
+      // been sent. With this, 新建对话 cycles back to the same message-less
+      // session instead of minting one per click; after the first prompt the
+      // session leaves the scan and the next click starts a fresh draft.
+      const originalCreateInWorkspace =
+        typeof ui.createInWorkspace === 'function' ? ui.createInWorkspace : null
+      const canPatch =
+        originalCreateInWorkspace !== null && typeof ui.createNamed === 'function'
+      if (canPatch) {
+        ui.createInWorkspace = function patchedCreateInWorkspace(workspace, options) {
+          // `null` = scan could not run safely → untouched host behavior;
+          // `undefined` = no reusable member → create a fresh session.
+          const blank = findReusableBlank(ui, workspace, options)
+          if (blank === null) return originalCreateInWorkspace.call(this, workspace, options)
+          const preset = options?.agentPreset
+          return ui.createNamed({
+            workspaceId: workspace.workspaceId,
+            ...blank === undefined ? {} : { sessionId: blank },
+            ...preset === undefined ? {} : { agentPreset: preset },
+          })
+        }
+      }
+
       ctx.effect(
         () => () => {
           disposed = true
           list.getSnapshot = rawGetSnapshot
+          if (canPatch) ui.createInWorkspace = originalCreateInWorkspace
           kept = []
           version += 1
           prevCurrent = undefined
