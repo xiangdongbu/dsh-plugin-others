@@ -1,0 +1,37 @@
+{
+  "name": "dsh-plugin-keep-new-session",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local fix: keep a newly created blank session (「新会话」) listed in the sidebar after you switch to another session, instead of letting the workspace UI filter it out. Kept sessions are deleted with the stock row menu's 「删除」.",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": {
+      "default": "./index.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "lib/client.js",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "license": "MIT",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [],
+      "platform": "web"
+    }
+  },
+  "engines": {
+    "dsh": ">=0.2.1-rc.2 <0.3.0"
+  }
+}

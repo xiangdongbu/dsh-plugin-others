@@ -1,0 +1,5 @@
+# Mounts the browser half that keeps visited blank sessions (new conversations)
+# visible in the sidebar after you switch away from them.
+- insert:
+    - id: keep-new-session
+      name: 'dsh-plugin-keep-new-session'

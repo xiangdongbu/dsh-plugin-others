@@ -9,6 +9,7 @@ DeepSeek Harness 插件合集仓库（collection repo）：仓库根没有 `dsh`
 | `dsh-plugin-auto-load-earlier` | 隐藏对话顶部的「加载更早」按钮，滚到顶部时自动加载上一页历史 |
 | `dsh-plugin-cmdw-close-fix` | cmdw 关闭行为修复 |
 | `dsh-plugin-dream-skin-fix` | dream 皮肤两处可读性修复：① 输入框（composer）背景提亮；② 底部状态栏（token 用量 / 性能统计）不再浮在对话文字上 |
+| `dsh-plugin-keep-new-session` | 新建的空会话切走后不再从侧栏消失；删除复用行菜单里已有的「删除」（进回收站） |
 | `dsh-plugin-no-session-rename-dblclick` | 禁用侧栏会话标题双击重命名（保留右键菜单重命名） |
 
 > 原 `dsh-plugin-dream-composer-fix` 与 `dsh-plugin-statusbar-overlap-fix` 已合并为 `dsh-plugin-dream-skin-fix`（两者都是纯 CSS 覆盖，规则各自独立、互不影响）。升级时先卸掉旧的两个，避免同一份 CSS 注入两次。
